@@ -1,0 +1,509 @@
+// =================== MODELS ===================
+
+// models/userModel.js
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+
+const userSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true, select: false },
+    role: { type: String, enum: ['user', 'admin', 'donor', 'shopkeeper', 'institute'], default: 'user' },
+    active: { type: Boolean, default: true },
+    address: {
+        street: String,
+        city: String,
+        state: String,
+        pincode: String
+    },
+    createdAt: { type: Date, default: Date.now }
+});
+
+userSchema.pre('save', async function(next) {
+    if (!this.isModified('password')) return next();
+    this.password = await bcrypt.hash(this.password, 12);
+    next();
+});
+
+module.exports = mongoose.model('User', userSchema);
+
+// models/donorModel.js
+const mongoose = require('mongoose');
+
+const donorSchema = new mongoose.Schema({
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    total_donations: { type: Number, default: 0 },
+    last_donation_date: { type: Date }
+});
+
+module.exports = mongoose.model('Donor', donorSchema);
+
+// models/shopModel.js
+const mongoose = require('mongoose');
+
+const shopSchema = new mongoose.Schema({
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
+    shopName: { type: String, required: true },
+    inventory: [{
+        itemName: { type: String, required: true },
+        quantity: { type: Number, required: true },
+        pricePerUnit: { type: Number, required: true }
+    }],
+    contactInfo: {
+        email: { type: String, required: true },
+        phone: { type: String }
+    },
+    geolocation: {
+        type: { type: String, default: "Point", enum: ["Point"] },
+        coordinates: [Number]
+    },
+    verificationStatus: { type: Boolean, default: false },
+    rating: { type: Number, default: 0 }
+});
+
+shopSchema.index({ geolocation: '2dsphere' });
+module.exports = mongoose.model('Shop', shopSchema);
+
+// models/instituteModel.js
+const mongoose = require('mongoose');
+
+const instituteSchema = new mongoose.Schema({
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
+    institute_name: { type: String, required: [true, 'Institute name is required'] },
+    institute_type: { type: String, required: true, enum: ['ORPHANAGE', 'ELDERLY_HOME', 'FOOD_PROVIDER'] },
+    verification_status: { type: Boolean, default: true },
+    verification_documents: { type: String },
+    description: { type: String },
+    geolocation: {
+        type: { type: String, default: "Point", enum: ["Point"] },
+        coordinates: { type: [Number], required: [true, "Coordinates are required"] }
+    }
+});
+
+instituteSchema.index({ geolocation: '2dsphere' });
+module.exports = mongoose.model('Institute', instituteSchema);
+
+// models/requestModel.js
+const mongoose = require('mongoose');
+
+const requestSchema = new mongoose.Schema({
+    institute: { type: mongoose.Schema.Types.ObjectId, ref: 'Institute', required: true },
+    items: [{
+        name: { type: String, required: true },
+        quantity: { type: Number, required: true },
+        unit: { type: String, required: true }
+    }],
+    category: { 
+        type: String, 
+        required: true,
+        enum: ['FOOD', 'MEDICAL', 'EDUCATION', 'CLOTHING', 'OTHER']
+    },
+    priority: {
+        type: String,
+        enum: ['LOW', 'MEDIUM', 'HIGH'],
+        default: 'MEDIUM'
+    },
+    status: { 
+        type: String, 
+        enum: ['pending', 'fulfilled'], 
+        default: 'pending' 
+    },
+    comments: String,
+    createdAt: { type: Date, default: Date.now }
+});
+
+module.exports = mongoose.model('Request', requestSchema);
+
+// models/donationModel.js
+const mongoose = require('mongoose');
+
+const donationSchema = new mongoose.Schema({
+    donor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    institute: { type: mongoose.Schema.Types.ObjectId, ref: 'Institute', required: true },
+    shop: { type: mongoose.Schema.Types.ObjectId, ref: 'Shop', required: true },
+    items: [{
+        name: { type: String, required: true },
+        quantity: { type: Number, required: true },
+        unit: { type: String, required: true }
+    }],
+    totalAmount: { type: Number, required: true },
+    status: { type: String, enum: ['pending', 'completed'], default: 'pending' },
+    createdAt: { type: Date, default: Date.now }
+});
+
+donationSchema.path('items').schema.set('_id', false);
+module.exports = mongoose.model('Donation', donationSchema);
+
+// models/shippingModel.js
+const mongoose = require('mongoose');
+const geolib = require('geolib');
+
+const shippingSchema = new mongoose.Schema({
+    donation: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Donation', 
+        required: true 
+    },
+    qrCode: {
+        type: String,
+        unique: true,
+        required: true
+    },
+    status: {
+        type: String,
+        enum: ['preparing', 'in-transit', 'delivered'],
+        default: 'preparing'
+    },
+    deliveryProof: {
+        photo: String,
+        coordinates: {
+            type: { type: String, default: "Point", enum: ["Point"] },
+            coordinates: [Number]
+        },
+        timestamp: Date
+    },
+    createdAt: { type: Date, default: Date.now }
+});
+
+shippingSchema.index({ 'deliveryProof.coordinates': '2dsphere' });
+
+shippingSchema.methods.verifyLocation = function(instituteCoords) {
+    return geolib.isPointWithinRadius(
+        { latitude: this.deliveryProof.coordinates[1], longitude: this.deliveryProof.coordinates[0] },
+        { latitude: instituteCoords[1], longitude: instituteCoords[0] },
+        120
+    );
+};
+
+module.exports = mongoose.model('Shipping', shippingSchema);
+
+// =================== CONTROLLERS ===================
+
+// controllers/authController.js
+exports.protect = catchAsync(async (req, res, next) => {
+    // 1) Check if token exists
+    let token;
+    if (req.cookies.jwt) {
+        token = req.cookies.jwt;
+    }
+
+    if (!token) {
+        return next(new AppError('You are not logged in! Please log in to get access.', 401));
+    }
+
+    // 2) Verify token
+    const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+
+    // 3) Check if user still exists
+    const currentUser = await User.findById(decoded.id);
+    if (!currentUser) {
+        return next(new AppError('The user belonging to this token no longer exists.', 401));
+    }
+
+    // GRANT ACCESS TO PROTECTED ROUTE
+    req.user = currentUser;
+    next();
+});
+
+exports.restrictTo = (...roles) => {
+    return (req, res, next) => {
+        if (!roles.includes(req.user.role)) {
+            return next(new AppError('You do not have permission to perform this action', 403));
+        }
+        next();
+    };
+};
+
+// controllers/userController.js
+exports.updateMe = catchAsync(async (req, res, next) => {
+    // 1) Create error if user POSTs password data
+    if (req.body.password || req.body.passwordConfirm) {
+        return next(new AppError('This route is not for password updates. Please use /updateMyPassword.', 400));
+    }
+
+    // 2) Filter unwanted fields
+    const filteredBody = filterObj(req.body, 'name', 'email', 'address');
+
+    // 3) Update user document
+    const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
+        new: true,
+        runValidators: true
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            user: updatedUser
+        }
+    });
+});
+
+exports.getMe = catchAsync(async (req, res, next) => {
+    const user = await User.findById(req.user.id);
+    
+    res.status(200).json({
+        status: 'success',
+        data: {
+            user
+        }
+    });
+});
+
+// controllers/instituteController.js
+exports.createInstitute = catchAsync(async (req, res, next) => {
+    const institute = await Institute.create({
+        user: req.user.id,
+        institute_name: req.body.institute_name,
+        institute_type: req.body.institute_type,
+        description: req.body.description,
+        geolocation: req.body.geolocation
+    });
+
+    res.status(201).json({
+        status: 'success',
+        data: {
+            institute
+        }
+    });
+});
+
+exports.getInstitute = catchAsync(async (req, res, next) => {
+    const institute = await Institute.findOne({ user: req.user.id })
+        .populate('user', 'name email address');
+
+    if (!institute) {
+        return next(new AppError('No institute found for this user', 404));
+    }
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            institute
+        }
+    });
+});
+
+exports.updateInstitute = catchAsync(async (req, res, next) => {
+    const institute = await Institute.findOneAndUpdate(
+        { user: req.user.id },
+        req.body,
+        {
+            new: true,
+            runValidators: true
+        }
+    );
+
+    if (!institute) {
+        return next(new AppError('No institute found for this user', 404));
+    }
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            institute
+        }
+    });
+});
+
+// controllers/shopController.js
+exports.createShop = catchAsync(async (req, res, next) => {
+    const shop = await Shop.create({
+        user: req.user.id,
+        shopName: req.body.shopName,
+        contactInfo: req.body.contactInfo,
+        geolocation: req.body.geolocation
+    });
+
+    res.status(201).json({
+        status: 'success',
+        data: {
+            shop
+        }
+    });
+});
+
+exports.updateInventory = catchAsync(async (req, res, next) => {
+    const shop = await Shop.findOne({ user: req.user.id });
+
+    if (!shop) {
+        return next(new AppError('No shop found for this user', 404));
+    }
+
+    shop.inventory = req.body.inventory;
+    await shop.save();
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            shop
+        }
+    });
+});
+
+exports.getNearbyShops = catchAsync(async (req, res, next) => {
+    const { coordinates, maxDistance = 5000 } = req.query;
+
+    const shops = await Shop.find({
+        geolocation: {
+            $near: {
+                $geometry: {
+                    type: 'Point',
+                    coordinates: coordinates.map(Number)
+                },
+                $maxDistance: maxDistance
+            }
+        }
+    });
+
+    res.status(200).json({
+        status: 'success',
+        results: shops.length,
+        data: {
+            shops
+        }
+    });
+});
+
+// controllers/donorController.js
+exports.createDonation = catchAsync(async (req, res, next) => {
+    const { instituteId } = req.params;
+    const { items, shopId, totalAmount } = req.body;
+
+    // Verify institute exists
+    const institute = await Institute.findById(instituteId);
+    if (!institute) {
+        return next(new AppError('Institute not found', 404));
+    }
+
+    // Create donation
+    const donation = await Donation.create({
+        donor: req.user.id,
+        institute: instituteId,
+        shop: shopId,
+        items,
+        totalAmount
+    });
+
+    // Create shipping record with QR code
+    const qrCode = generateQRCode(); // Utility function to generate unique QR
+    await Shipping.create({
+        donation: donation._id,
+        qrCode
+    });
+
+    // Send email notifications
+    await new Email(institute.user, {
+        items,
+        totalAmount,
+        qrCodeData: qrCode
+    }).sendDonationNotification();
+
+    res.status(201).json({
+        status: 'success',
+        data: {
+            donation
+        }
+    });
+});
+
+exports.getShopsWithRequestedItems = catchAsync(async (req, res, next) => {
+    const { instituteId } = req.params;
+
+    // Get institute's active request
+    const request = await Request.findOne({
+        institute: instituteId,
+        status: 'pending'
+    });
+
+    if (!request) {
+        return next(new AppError('No active request found for this institute', 404));
+    }
+
+    // Find shops that have all requested items in inventory
+    const shops = await Shop.find({
+        'inventory.itemName': {
+            $all: request.items.map(item => item.name)
+        }
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            request,
+            shops
+        }
+    });
+});
+
+// controllers/requestController.js
+exports.getAllRequests = catchAsync(async (req, res, next) => {
+    let filter = {};
+
+    if (req.user.role === 'institute') {
+        const institute = await Institute.findOne({ user: req.user.id });
+        filter = { institute: institute._id };
+    }
+
+    const requests = await Request.find(filter)
+        .populate({
+            path: 'institute',
+            populate: { path: 'user', select: 'name email address' }
+        });
+
+    res.status(200).json({
+        status: 'success',
+        results: requests.length,
+        data: {
+            requests
+        }
+    });
+});
+
+exports.getRequest = catchAsync(async (req, res, next) => {
+    const request = await Request.findById(req.params.id)
+        .populate({
+            path: 'institute',
+            populate: { path: 'user', select: 'name email address' }
+        });
+
+    if (!request) {
+        return next(new AppError('No request found with that ID', 404));
+    }
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            request
+        }
+    });
+});
+
+exports.getRequestWithShops = catchAsync(async (req, res, next) => {
+    const request = await Request.findById(req.params.id)
+        .populate('institute');
+
+    if (!request) {
+        return next(new AppError('No request found with that ID', 404));
+    }
+
+    // Find nearby shops with matching inventory
+    const shops = await Shop.find({
+        geolocation: {
+            $near: {
+                $geometry: request.institute.geolocation,
+                $maxDistance: 5000 // 5km radius
+            }
+        },
+        'inventory.itemName': {
+            $in: request.items.map(item => item.name)
+        }
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            request,
+            shops
+        }
+    });
+}); 

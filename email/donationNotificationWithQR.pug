@@ -1,0 +1,36 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title New Donation Received
+
+  body(style="font-family: Arial, sans-serif; padding: 20px;")
+    div(style="max-width: 600px; margin: 0 auto;")
+      h1 New Donation Received
+      
+      p Dear #{firstName},
+      
+      p A new donation has been made:
+      
+      ul
+        each item in items
+          li #{item.quantity} #{item.unit} of #{item.name}
+      
+      p Total Amount: ₹#{totalAmount}
+      
+      div(style="text-align: center; margin: 20px 0; padding: 20px; background-color: #f5f5f5; border-radius: 8px;")
+        h3(style="margin-bottom: 15px;") Delivery Verification Code
+        p(style="margin: 15px 0; font-size: 18px;") Your verification code:
+        p(style="font-size: 24px; font-weight: bold; letter-spacing: 2px; color: #333; background: #fff; padding: 10px; border-radius: 4px;") #{verificationCode}
+        p(style="margin-top: 15px;") Provide this code to the delivery person to verify the delivery
+
+      p.instructions(style="margin-top: 20px;")
+        strong Delivery Instructions:
+        br
+        | 1. Provide the verification code to the delivery person.
+        br
+        | 2. The delivery must be made within 120 meters of your location.
+      
+      p Best regards,
+      p The Team
