@@ -65,7 +65,7 @@ exports.createDonationCheckout = catchAsync(async (req, res) => {
       throw new AppError('Shop not found', 404);
     }
 
-    // Verify inventory availability and update quantities
+    // Verify inventory availability
     for (const item of parsedItems) {
       const inventoryItem = shop.inventory.find(i => i.itemName === item.name);
       if (!inventoryItem) {
@@ -74,13 +74,24 @@ exports.createDonationCheckout = catchAsync(async (req, res) => {
       if (inventoryItem.quantity < item.quantity) {
         throw new AppError(`Insufficient stock for ${item.name}`, 400);
       }
-      
-      // Update inventory quantity
-      inventoryItem.quantity -= item.quantity;
     }
 
-    // Save the updated shop inventory
-    await shop.save();
+    // Update inventory quantities using findOneAndUpdate for each item
+    for (const item of parsedItems) {
+      await Shop.findOneAndUpdate(
+        { 
+          _id: shopId,
+          'inventory.itemName': item.name
+        },
+        {
+          $inc: { 'inventory.$.quantity': -item.quantity }
+        },
+        { 
+          new: true,
+          runValidators: false // Disable validation for this update
+        }
+      );
+    }
 
     // Create donation record with items
     const donation = await Donation.create({
@@ -110,7 +121,7 @@ exports.createDonationCheckout = catchAsync(async (req, res) => {
       message: 'Donation created successfully',
       data: {
         donation: populatedDonation,
-        redirectUrl: `${process.env.FRONTEND_URL}/profile/my-donations?donationId=${donation._id}`
+        redirectUrl: `https://careconnect-76uc.onrender.com/profile/my-donations?donationId=${donation._id}`
       }
     });
   } catch (error) {
