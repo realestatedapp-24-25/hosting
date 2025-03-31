@@ -62,7 +62,7 @@ const CropRecommendation = () => {
         try
         {
             const response = await axios.get(
-                "/api/v1/crops/infopredict",
+                "http://127.0.0.1:3000/api/v1/crops/infopredict",
                 {
                     params: {
                         data: [N, P, K, temperature, humidity, pH, rainfall].map(
