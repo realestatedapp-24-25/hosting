@@ -29,8 +29,8 @@ exports.getCheckoutSession = catchAsync(async (req, res, next) => {
   // Create Stripe checkout session
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
-    success_url: `${process.env.FRONTEND_URL}/donation-success?shop=${shopId}&institute=${instituteId}&amount=${totalAmount}&items=${encodeURIComponent(JSON.stringify(items))}`,
-    cancel_url: `${process.env.FRONTEND_URL}/donate/${instituteId}/details`,
+    success_url: `https://careconnect-76uc.onrender.com/donation-success?shop=${shopId}&institute=${instituteId}&amount=${totalAmount}&items=${encodeURIComponent(JSON.stringify(items))}`,
+    cancel_url: `https://careconnect-76uc.onrender.com/donate/${instituteId}/details`,
     customer_email: req.user.email,
     client_reference_id: shopId,
     line_items: lineItems,
