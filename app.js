@@ -25,7 +25,7 @@ app.use(express.json());
 app.use(cookieparser());
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: "https://careconnect-76uc.onrender.com",
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: [
@@ -37,7 +37,7 @@ app.use(
   })
 );
 
-
+// API Routes
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/donors", donorRouter);
 app.use("/api/v1/institutes", instituteRouter);
