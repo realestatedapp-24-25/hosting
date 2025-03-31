@@ -46,8 +46,30 @@ app.use("/api/v1/requests", requestRouter);
 app.use('/api/v1/shipping', shippingRouter);
 app.use('/api/v1/reviews', reviewRouter);
 app.use('/api/v1/payment', paymentRoutes);
-app.all("*", (req, res, next) => {
-  next(new AppError(`can't find the ${req.originalUrl} url`));
+
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, 'frontend/dist')));
+
+// The "catchall" handler: for any request that doesn't match an API route,
+// send back React's index.html file.
+app.get('*', (req, res) => {
+  // Only serve the frontend for non-API routes
+  if (!req.path.startsWith('/api/')) {
+    res.sendFile(path.join(__dirname, 'frontend/dist/index.html'));
+  } else {
+    next(new AppError(`Can't find ${req.originalUrl} on this server`, 404));
+  }
+});
+
+// Error handling for API routes
+app.use((err, req, res, next) => {
+  err.statusCode = err.statusCode || 500;
+  err.status = err.status || 'error';
+
+  res.status(err.statusCode).json({
+    status: err.status,
+    message: err.message
+  });
 });
 
 module.exports = app;
