@@ -263,10 +263,7 @@ exports.searchRequests = catchAsync(async (req, res, next) => {
 
     // Filter by item category (search in items array)
     if (category) {
-        matchStage['items.name'] = {
-            $regex: category,
-            $options: 'i'
-        };
+        matchStage['category'] = category.toUpperCase();
     }
 
     // Add match stage to pipeline if there are any filters

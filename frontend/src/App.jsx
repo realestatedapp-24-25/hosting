@@ -32,80 +32,82 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <div className="max-w-8xl mx-auto">
+        <div className="min-h-screen flex flex-col">
           <NavigationBar />
-          <Routes>
-            {/* Open Routes */}
-            <Route path="/" element={<HomePage />} />
-            <Route path="/signin" element={<SigninPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-            <Route path="/requests" element={<RequestList />} />
-            <Route path="/about" element={<AboutUs />} />
-            <Route path="/requests/:id" element={<RequestDetail />} />
-            <Route path="/donate/:instituteId" element={<DonationProcess />} />
-            <Route path="/donate/:instituteId/details" element={<DonationDetails />} />
-            <Route path="/donation-success" element={<DonationSuccess />} />
+          <main className="flex-grow px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-8xl mx-auto w-full">
+            <Routes>
+              {/* Open Routes */}
+              <Route path="/" element={<HomePage />} />
+              <Route path="/signin" element={<SigninPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+              <Route path="/requests" element={<RequestList />} />
+              <Route path="/about" element={<AboutUs />} />
+              <Route path="/requests/:id" element={<RequestDetail />} />
+              <Route path="/donate/:instituteId" element={<DonationProcess />} />
+              <Route path="/donate/:instituteId/details" element={<DonationDetails />} />
+              <Route path="/donation-success" element={<DonationSuccess />} />
 
-            {/* Protected Routes with DashLayout */}
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <DashLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Profile />} />
-              <Route path="dashboard" element={<UserDashboard />} />
-              <Route path="impact" element={<ImpactDashboard />} />
-              <Route path="donation-history" element={<DonationHistory />} />
-              {/* Profile routes here */}
+              {/* Protected Routes with DashLayout */}
               <Route
-                path="send-request"
+                path="/profile"
                 element={
-                  <InstituteRoute>
-                    <RequestForm />
-                  </InstituteRoute>
+                  <ProtectedRoute>
+                    <DashLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Profile />} />
+                <Route path="dashboard" element={<UserDashboard />} />
+                <Route path="impact" element={<ImpactDashboard />} />
+                <Route path="donation-history" element={<DonationHistory />} />
+                {/* Profile routes here */}
+                <Route
+                  path="send-request"
+                  element={
+                    <InstituteRoute>
+                      <RequestForm />
+                    </InstituteRoute>
+                  }
+                />
+                <Route
+                  path="requests"
+                  element={
+                    <InstituteRoute>
+                      <MyRequest />
+                    </InstituteRoute>
+                  }
+                />
+                <Route
+                  path="my-donations"
+                  element={
+                    <DonorRoute>
+                      <MyDonations />
+                    </DonorRoute>
+                  }
+                />
+                {/* Shopkeeper Location Page */}
+                <Route
+                  path="shopkeeper-location"
+                  element={<ShopkeeperDonations />}
+                />
+                <Route
+                  path="shopkeeper-reviews"
+                  element={<New />}
+                />
+              </Route>
+
+              <Route
+                path="/post-signup"
+                element={
+                  <ProtectedRoute>
+                    <PostSignupForm />
+                  </ProtectedRoute>
                 }
               />
-              <Route
-                path="requests"
-                element={
-                  <InstituteRoute>
-                    <MyRequest />
-                  </InstituteRoute>
-                }
-              />
-              <Route
-                path="my-donations"
-                element={
-                  <DonorRoute>
-                    <MyDonations />
-                  </DonorRoute>
-                }
-              />
-              {/* Shopkeeper Location Page */}
-              <Route
-                path="shopkeeper-location"
-                element={<ShopkeeperDonations />}
-              />
-              <Route
-                path="shopkeeper-reviews"
-                element={<New />}
-              />
-            </Route>
 
-            <Route
-              path="/post-signup"
-              element={
-                <ProtectedRoute>
-                  <PostSignupForm />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route path="/institute-reviews" element={<InstituteReviews />} />
-          </Routes>
+              <Route path="/institute-reviews" element={<InstituteReviews />} />
+            </Routes>
+          </main>
           <Footer />
         </div>
       </BrowserRouter>
