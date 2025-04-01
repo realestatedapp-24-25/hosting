@@ -101,12 +101,13 @@ exports.getMe = catchAsync(async (req, res, next) => {
 });
 
 exports.getDashboardData = catchAsync(async (req, res, next) => {
-  // Get user's donations
+  // Get user's donations with populated institute data
   const donations = await Donation.find({ donor: req.user.id })
+    .populate('institute', 'name')
     .sort('-createdAt')
     .limit(10);
 
-  // Calculate statistics
+  // Calculate statistics with populated data
   const allDonations = await Donation.find({ donor: req.user.id });
   const stats = {
     totalDonations: allDonations.length,
@@ -115,10 +116,11 @@ exports.getDashboardData = catchAsync(async (req, res, next) => {
     impactScore: calculateImpactScore(allDonations)
   };
 
-  // Format recent activity
+  // Format recent activity with proper data handling
   const recentActivity = donations.map(donation => ({
     type: 'donation',
-    description: `Donated ${donation.items.length} items to ${donation.institute.name}`,
+    institute: donation.institute,
+    items: donation.items,
     status: donation.status,
     timestamp: donation.createdAt,
     amount: donation.totalAmount

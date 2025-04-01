@@ -388,61 +388,50 @@ exports.getNearbyShops = catchAsync(async (req, res, next) => {
 });
 
 exports.getMyDonations = catchAsync(async (req, res, next) => {
-    const donations = await Donation.find({ 
-        donor: req.user.id,
-        institute: { $ne: null } // Only get donations with valid institute
-    })
-    .populate({
-        path: 'institute',
-        select: 'institute_name institute_type user',
-        populate: {
-            path: 'user',
-            select: 'name email address'
-        }
-    })
-    .populate({
-        path: 'shop',
-        select: 'shopName contactInfo'
-    })
-    .sort('-createdAt');
-
-    // Filter out any donations with null values
-    const validDonations = donations.filter(donation => 
-        donation.institute && 
-        donation.shop && 
-        donation.items && 
-        donation.items.length > 0
-    );
+    const donations = await Donation.find({ donor: req.user.id })
+        .populate({
+            path: 'institute',
+            select: 'institute_name user',
+            populate: {
+                path: 'user',
+                select: 'address contactInfo'
+            }
+        })
+        .populate({
+            path: 'shop',
+            select: 'shopName contactInfo'
+        })
+        .sort('-createdAt');
 
     res.status(200).json({
         status: 'success',
-        results: validDonations.length,
         data: {
-            donations: validDonations
+            donations
         }
     });
-}); 
+});
+
 exports.getShopDonations = catchAsync(async (req, res, next) => {
-  // Find the shop associated with the logged-in user
-  const shop = await Shop.findOne({ user: req.user.id });
+    // Find the shop associated with the logged-in user
+    const shop = await Shop.findOne({ user: req.user.id });
 
-  if (!shop) {
-    return next(new AppError('No shop found for this user', 404));
-  }
-
-  // Find all donations sent to this shop
-  const donations = await Donation.find({ shop: shop._id })
-    .sort('-createdAt') // Sort by newest first
-    .populate('items.item', 'name unit') // Populate item details
-    .populate('donor', 'name email'); // Populate donor details
-
-  res.status(200).json({
-    status: 'success',
-    results: donations.length,
-    data: {
-      donations
+    if (!shop) {
+        return next(new AppError('No shop found for this user', 404));
     }
-  });
+
+    // Find all donations sent to this shop
+    const donations = await Donation.find({ shop: shop._id })
+        .sort('-createdAt') // Sort by newest first
+        .populate('items.item', 'name unit') // Populate item details
+        .populate('donor', 'name email'); // Populate donor details
+
+    res.status(200).json({
+        status: 'success',
+        results: donations.length,
+        data: {
+            donations
+        }
+    });
 });
 
 exports.getInstituteDonations = catchAsync(async (req, res, next) => {

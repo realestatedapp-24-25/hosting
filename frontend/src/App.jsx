@@ -24,6 +24,9 @@ import ShopkeeperDonations from "./pages/ShopkeeperDonations";
 import New from "./pages/ShopkeeperReviews";
 import DonationSuccess from "./components/DonationSuccess";
 import AboutUs from "./components/AboutUs";
+import Profile from "./components/Profile";
+import ImpactDashboard from "./components/ImpactDashboard";
+import DonationHistory from "./components/DonationHistory";
 
 function App() {
   return (
@@ -52,8 +55,10 @@ function App() {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route index element={<Profile />} />
               <Route path="dashboard" element={<UserDashboard />} />
+              <Route path="impact" element={<ImpactDashboard />} />
+              <Route path="donation-history" element={<DonationHistory />} />
               {/* Profile routes here */}
               <Route
                 path="send-request"

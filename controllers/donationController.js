@@ -1,12 +1,10 @@
 const Donation = require('../models/donationModel');
 const catchAsync = require('../utils/catchAsync');
 
-exports.getMyDonations = catchAsync(async (req, res) => {
+exports.getMyDonations = catchAsync(async (req, res, next) => {
   const donations = await Donation.find({ donor: req.user._id })
-    .populate([
-      { path: 'shop', select: 'shopName contactInfo address' },
-      { path: 'institute', select: 'name' }
-    ])
+    .populate('institute', 'name')
+    .populate('shop', 'shopName contactInfo address')
     .sort('-createdAt');
 
   res.status(200).json({
@@ -17,13 +15,11 @@ exports.getMyDonations = catchAsync(async (req, res) => {
   });
 });
 
-exports.getDonation = catchAsync(async (req, res) => {
+exports.getDonation = catchAsync(async (req, res, next) => {
   const donation = await Donation.findById(req.params.id)
-    .populate([
-      { path: 'shop', select: 'shopName contactInfo address' },
-      { path: 'institute', select: 'name' },
-      { path: 'donor', select: 'name email' }
-    ]);
+    .populate('institute', 'name')
+    .populate('shop', 'shopName contactInfo address')
+    .populate('donor', 'name email');
 
   if (!donation) {
     return res.status(404).json({

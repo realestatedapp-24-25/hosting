@@ -12,6 +12,7 @@ const requestRouter = require('./routes/requestRoute');
 const shippingRouter = require('./routes/shippingRoute');
 const reviewRouter = require('./routes/reviewRoute');
 const paymentRoutes = require('./routes/paymentRoutes');
+const donationRoutes = require('./routes/donationRoutes');
 const AppError = require("./utils/appError");
 
 const app = express();
@@ -46,6 +47,7 @@ app.use("/api/v1/requests", requestRouter);
 app.use('/api/v1/shipping', shippingRouter);
 app.use('/api/v1/reviews', reviewRouter);
 app.use('/api/v1/payment', paymentRoutes);
+app.use('/api/v1/donations', donationRoutes);
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, 'frontend/dist')));
