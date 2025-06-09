@@ -1,0 +1,54 @@
+doctype html
+html
+  head
+    meta(name='viewport', content='width=device-width')
+    meta(http-equiv='Content-Type', content='text/html; charset=UTF-8')
+    title Anomaly Alert - Request Limit Exceeded
+  body(style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;")
+    div(style="max-width: 600px; margin: 0 auto; background: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);")
+      div(style="background: #d32f2f; color: white; padding: 20px; border-radius: 10px 10px 0 0;")
+        h1(style="margin: 0; font-size: 24px;") ⚠️ Request Limit Exceeded Alert
+      
+      div(style="padding: 20px;")
+        p Hi #{firstName},
+        
+        p(style="font-weight: bold; color: #d32f2f;") 
+          | An institute has exceeded the request limit and is attempting to create more requests.
+        
+        div(style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;")
+          h2(style="margin: 0 0 15px 0; color: #333;") Institute Details:
+          ul(style="list-style: none; padding: 0; margin: 0;")
+            li 
+              strong Name: 
+              span #{instituteName}
+            li 
+              strong Contact Person: 
+              span #{institutePerson}
+            li 
+              strong Email: 
+              span #{instituteEmail}
+            li 
+              strong Attempt Time: 
+              span #{attemptTime}
+        
+        div(style="background: #fff3e0; padding: 15px; border-left: 4px solid #ff9800; margin: 20px 0;")
+          p(style="margin: 0;")
+            | The institute has made 
+            strong #{requestCount} requests 
+            | in the last #{daysCount} days.
+            br
+            | Recommended limit: 
+            strong #{warningThreshold} requests
+
+        p(style="color: #d32f2f;") 
+          strong Action Required: 
+          | Please review this institute's activity.
+        
+        div(style="text-align: center; margin: 30px 0;")
+          a(href=`${url}`, target='_blank', style="display: inline-block; padding: 12px 24px; background-color: #1976d2; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;") View All Requests
+
+        hr(style="border: none; border-top: 1px solid #eee; margin: 20px 0;")
+        
+        p(style="color: #666; font-size: 14px;") 
+          | This is an automated alert. Please take appropriate action if needed.
+        p(style="color: #666; font-size: 14px;") - System Alert 

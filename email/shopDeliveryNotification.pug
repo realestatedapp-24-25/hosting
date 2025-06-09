@@ -1,0 +1,33 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title New Delivery Request
+  body(style="font-family: Arial, sans-serif; padding: 20px;")
+    div(style="max-width: 600px; margin: 0 auto;")
+      h1 New Delivery Request
+      
+      p Dear #{shopName},
+      
+      p Please prepare the following items for delivery:
+      
+      ul
+        each item in items
+          li #{item.quantity} #{item.unit} of #{item.name}
+      
+      p Delivery Instructions:
+      ol
+        li Go to the institute location
+        li Be within 120 meters of the institute
+        li Scan the QR code provided to the institute
+        li Take a photo of the delivered items
+      
+      p Institute Details:
+      p Name: #{instituteName}
+      p Address: #{instituteAddress}
+      
+      p Total Amount: ₹#{totalAmount}
+      
+      p Best regards,
+      p The Team 
